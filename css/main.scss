@@ -1,0 +1,27 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+@charset "utf-8";
+
+//@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display&family=Federant&family=Harmattan&family=Pinyon+Script&family=Saira+Extra+Condensed&family=Special+Elite&family=Tulpen+One&family=Yesteryear&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Yesteryear&family=Pinyon+Script&display=swap');
+
+// font-family: 'Big Shoulders Display', sans-serif;
+// font-family: 'Federant', serif;
+// font-family: 'Harmattan', sans-serif;
+// font-family: 'Saira Extra Condensed', sans-serif;
+// font-family: 'Tulpen One', sans-serif;
+// font-family: 'Special Elite', sans-serif;
+
+$base-font-family: 'Special Elite', Georgia, Times, 'Times New Roman', sans-serif;
+$signature-font-family: 'Pinyon Script', 'Times New Roman', Georgia, serif;
+$base-font-size:   12pt;
+
+$text-color:       hsl(0, 0%, 25%);
+$alt-color:        hsl(0, 70%, 46%);
+$article-bg-color: hsl(35, 36%, 95%);
+$background-color: darken($article-bg-color, 6%);
+
+// Import partials from `sass_dir` (defaults to `_sass`)
+@import "base";
+

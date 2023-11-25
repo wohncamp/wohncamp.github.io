@@ -1,0 +1,71 @@
+body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-font-feature-settings: "kern", "liga=1, dlig=1", "salt";
+    -ms-font-feature-settings: "kern", "liga", "dlig", "salt";
+    -webkit-font-feature-settings: "kern", "liga", "dlig", "salt";
+    -o-font-feature-settings: "kern", "liga", "dlig", "salt";
+    font-feature-settings: "kern", "liga", "dlig", "salt";
+    text-rendering: optimizeLegibility;
+
+    background-color: $background-color;
+    font-family: $base-font-family;
+    font-size: $base-font-size;
+    color: $text-color;
+
+    a, a:hover {
+	color: $alt-color;
+    }
+
+    p {
+	line-height: 1.7;
+    }
+
+    h1 {
+	margin-top: 1em;
+	font-size: 2em;
+	margin-bottom: 1em;
+    }
+
+    h2 {
+	margin-top: 1em;
+	font-size: 1.6em;
+	margin-bottom: 0.6em;
+    }
+
+    h3 {
+	font-size: 1.2em;
+    }
+}
+
+.article {
+    margin: auto;
+    width: 40em;
+}
+
+.article .title {
+    padding-top: 1em;
+}
+
+.article .author {
+    font-family: $signature-font-family;
+    font-size: 3em;
+    text-align: right;
+    padding-bottom: 1em;
+}
+
+.article .content {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+
+.article .prev {
+    height: 1.5em;
+    text-align: right;
+}
+
+.article .next {
+    height: 1.5em;
+    text-align: left;
+}
+
