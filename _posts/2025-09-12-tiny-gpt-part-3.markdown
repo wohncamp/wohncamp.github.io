@@ -1,101 +1,125 @@
 ---
 layout: post
 title: "Building GPT from Scratch: 3. Training"
-date: 2025-09-10 22:00:00 -0700
+date: 2025-09-12 09:00:00 -0700
 categories: Learning
 ---
 
-I will use GPT-Neo to implement a lightweight version of GPT. GPT-Neo requires a configuration instance that includes hyperparameters such as context size and number of layers. Although GPT-Neo provides its own configuration class, I’m defining a custom `Config` class to make future replacements easier. I’ve copied most of the non-trivial values from GPT-Neo, while assigning smaller values to other hyperparameters to keep the model compact.
+Training the tiny GPT model is relatively straightforward. For each data point, the training process splits it into `X` and `Y`, where `Y` is simply `X` shifted by one token. This means the model is trained to predict the next token at each position. As a result, the final token in the output represents the model’s prediction for the next token in the sequence.
+
+In addition to the core training logic, I’ve integrated the tqdm package to monitor progress during training. The model also saves its parameters after each epoch.
 
 ```python
-# model.py
-
-class Config:
-    def __init__(self):
-        self.hidden_size = 64
-        self.embedding_size = 64
-        self.context_size = 64
-        self.num_layers = 8
-        self.layer_norm_epsilon = 1e-05
-        self.attention_layers = ['local'] * self.num_layers
-        self.max_position_embeddings = 2048
-        self.window_size = self.hidden_size
-        self.attention_dropout = 0.0
-        self.resid_dropout = 0.0
-        self.num_heads = 16
-        self._attn_implementation = 'eager'
-        self.intermediate_size = None
-        self.activation_function = 'gelu_new'
-```
-
-Now it's finally time to implement the `GPT` class. The implementation is quite simple. The model architecture is defined in the constructor and is fairly straightforward. The `forward` method is also simple — it just passes the input tensor through each component and returns the result. The only potentially non-obvious part is the positional embedding, but I’ll dive into that in more detail later.
-
-```python
-# model.py (continued)
+# train.py
 
 import torch
-import torch.nn as nn
 
-from transformers.models.gpt_neo.modeling_gpt_neo import GPTNeoBlock
+from tqdm import tqdm
 
 
-class GPT(nn.Module):
-    def __init__(self, tokenizer, config):
-        super().__init__()
+class Trainer:
+    def __init__(self, model, data_loader, epochs=5, device='cpu'):
+        self.model = model
+        self.data_loader = data_loader
+        self.epochs = epochs
+        self.device = device
 
-        self.tokenizer = tokenizer
-        self.config = config
+    def train(self):
+        self.model.to(self.device)
+        self.model.train()
 
-        self.word_token_embedding = nn.Embedding(self.tokenizer.vocab_size, config.embedding_size)
-        self.word_position_embedding = nn.Embedding(config.context_size, config.embedding_size)
-        self.blocks = nn.ModuleList([GPTNeoBlock(config, layer_id=i) for i in range(config.num_layers)])
-        self.norm = nn.LayerNorm(config.hidden_size)
-        self.output = nn.Linear(config.embedding_size, self.tokenizer.vocab_size, bias=False)
+        loss_fn = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(self.model.parameters())
 
-    def forward(self, X):
-        X = X[:, :self.config.context_size]
+        for epoch in range(self.epochs):
+            pbar = tqdm(total=len(self.data_loader))
+            for d in self.data_loader:
+                X = d[:, :-1].to(self.device)
+                Y = d[:, 1:].to(self.device)
 
-        position_ids = torch.arange(X.shape[1]).unsqueeze(0).expand(X.shape[0], -1).to(X.device)
-        X = self.word_token_embedding(X) + self.word_position_embedding(position_ids)
+                output = self.model(X)
 
-        for block in self.blocks:
-            X = block(X)[0]
+                loss = loss_fn(output.transpose(1, 2), Y)
+                loss.backward()
+                optimizer.step()
+                optimizer.zero_grad()
 
-        X = self.norm(X)
-        X = self.output(X)
+                pbar.update(1)
+                pbar.set_description(f'Loss: {loss:.4f}')
 
-        return X
+            pbar.close()
 
-    def next_token(self, prompt):
-        tokens = torch.tensor(self.tokenizer.encode(prompt)).unsqueeze(0)
-        logits = self.forward(tokens.to(self.device))
-        next_token = torch.argmax(logits, dim=-1).squeeze(0)[-1].item()
-
-        return self.tokenizer.decode([next_token])
-    
-    @property
-    def device(self):
-        return next(self.parameters()).device
+            print(f'Epoch {epoch}: {loss}')
+            torch.save(self.model.state_dict(), f'./{epoch + 1}.torch')
 ```
 
-Since GPT’s goal is to generate the next token given an input, I added a `next_token` method to the `GPT` class. This method takes a `prompt` as input, converts it into tokens, feeds them into the model, and selects the next token based on the output.
-
-Now, let's see if it works well.
+Now let's run the training process.
 
 ```shell
 $ python
->>> from tokenizer import Tokenizer
->>> from model import Config, GPT
+>>> from torch.utils.data import DataLoader
 >>>
->>> t = Tokenizer()
->>> gpt = GPT(t, Config())
+>>> from tinyllm.tokenizer import Tokenizer
+>>> from tinyllm.dataset import TinyDataset
+>>> from tinyllm.model import GPT, Config
+>>> from tinyllm.train import Trainer
 >>>
->>> gpt.next_token('Once upon a')
-' Delhi'
->>> gpt.next_token('Once upon a Delhi')
-' Marathon'
->>> gpt.next_token('Once upon a Delhi Marathon')
-' Compact'
+>>> config = Config()
+>>> batch_size=32
+>>>
+>>> tokenizer = Tokenizer()
+>>> dataset = TinyDataset(tokenizer, config.context_size + 1)
+>>>
+>>> data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+>>>
+>>> gpt = GPT(tokenizer, config)
+>>> trainer = Trainer(gpt, data_loader, epochs=1)
+>>>
+>>> trainer.train()
+Loss: 2.7894: 100%|███████████████████████████████████████████████| 688/688 [14:47<00:00,  1.29s/it]
+Epoch 0: 2.789372444152832
+>>>
+>>> text = 'Once upon a'
+>>> for i in range(10):
+...     text += gpt.next_token(text)
+...
+>>> print(text)
+Once upon a time, there was a little girl named Lily.
 ```
 
-It generates a sentence like `Once upon a Delhi Marathon Compact`, which doesn't make much sense. This is expected, since the model hasn't been trained yet. The next step will be to implement a training process.
+Most likely, the model is overfitted due to the small amount of training data (I used the validation set). However, processing 688 batches took about 15 minutes on my MacBook Air, while the full training set contains 66,242 batches. Roughly estimated, training could take around a day. So, I used a `g6.2xlarge` instance on AWS to speed up the process.
+
+Here is the result from `g6.2xlarge` instance. The training took about an hour.
+
+```shell
+$ python3
+>>> from torch.utils.data import DataLoader
+>>>
+>>> from tinyllm.tokenizer import Tokenizer
+>>> from tinyllm.dataset import TinyDataset
+>>> from tinyllm.model import GPT, Config
+>>> from tinyllm.train import Trainer
+>>>
+>>> config = Config()
+>>> batch_size=32
+>>>
+>>> tokenizer = Tokenizer()
+>>> dataset = TinyDataset(tokenizer, config.context_size + 1, set_type='train')
+>>> data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+>>>
+>>> gpt = GPT(tokenizer, config)
+>>> trainer = Trainer(gpt, data_loader, epochs=1, device='cuda')
+>>>
+>>> trainer.train()
+Loss: 1.8627: 100%|███████████████████████████████████████████| 66242/66242 [53:58<00:00, 20.46it/s]
+Epoch 0: 1.8627163171768188
+>>>
+>>> text = 'Once upon a'
+>>> for i in range(36):
+...   text += gpt.next_token(text)
+...
+>>> print(text)
+Once upon a time, there was a little girl named Lily. She loved to play outside and explore the world around her. One day, she found a big, shiny rock on the ground.
+```
+
+Now I have a working GPT model with training tools. It is time to implement each component from scratch to enhance my understanding.
