@@ -87,7 +87,7 @@ Epoch 0: 2.789372444152832
 Once upon a time, there was a little girl named Lily.
 ```
 
-Most likely, the model is overfitted due to the small amount of training data (I used the validation set). However, processing 688 batches took about 15 minutes on my MacBook Air, while the full training set contains 66,242 batches. Roughly estimated, training could take around a day. So, I used a `g6.2xlarge` instance on AWS to speed up the process.
+Most likely, the model is overfitted due to the small amount of training data (I used the validation set). However, processing a validation set, which has 688 batches, took about 15 minutes on my MacBook Air, while the full training set contains 66,242 batches. Roughly estimated, training could take around a day. So, I used a `g6.2xlarge` instance, which has NVIDIA GPU (L4), on AWS to speed up the process. Note that I passed `cuda` as device to `Trainer`.
 
 Here is the result from `g6.2xlarge` instance. The training took about an hour.
 
