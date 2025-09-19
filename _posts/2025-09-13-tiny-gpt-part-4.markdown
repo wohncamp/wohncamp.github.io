@@ -21,7 +21,7 @@ The next part is *sequence*. Words can have different meanings depending on wher
 
 If the embedding dimension is `N`, then there is a positional embedding vector of dimension `N` for the 0th position in the sentence. This vector is added to the word's embedding. The same process continues for every position in the sentence.
 
-Personally, positional embedding feels a bit odd to me - it seems to oversimplify the complexity of language grammar. Maybe this could be an interesting topic for further research. That said, in practice, positional embedding is known to work quite well.
+Personally, positional embedding feels a bit odd to me - it seems to oversimplify the complexity of language grammar. Maybe this could be an interesting topic for further research. However, in practice, positional embedding is known to work quite well.
 
 Let’s go ahead and implement two embeddings.
 

@@ -72,13 +72,13 @@ After that, I can substitute `GPTNeoBlock` with `GPTBlock`.
 +        self.blocks = nn.ModuleList([GPTBlock(config, layer_id=i) for i in range(config.num_layers)])
 ```
 
-The first component I will replace is nn.LayerNorm. Layer normalization was introduced in the [Layer Normalization](https://arxiv.org/abs/1607.06450) paper. In short, it is known to make training more stable. The concept is straightforward: LayerNorm normalizes each input (i.e., the output of the previous layer) using the following normalization terms.
+The first component I will replace is `nn.LayerNorm`. Layer normalization was introduced in the [Layer Normalization](https://arxiv.org/abs/1607.06450) paper. In short, it is known to make training more stable. The concept is straightforward: LayerNorm normalizes each input (i.e., the output of the previous layer) using the following normalization terms.
 
 $$
 \mu = \frac{1}{H} \sum_{i=1}^{H}a_i \hspace{1cm} \sigma = \sqrt{\frac{1}{H} \sum_{i=1}^{H} (a_i - \mu)^2}
 $$
 
-Then, the input can be normalized as follows.
+where $$ H $$ is the number of hidden units in the layer and $$ a_i $$ is the input of each unit. Then, the input can be normalized as follows.
 
 $$
 x_{normalized} = \frac{x - \mu}{\sigma}
